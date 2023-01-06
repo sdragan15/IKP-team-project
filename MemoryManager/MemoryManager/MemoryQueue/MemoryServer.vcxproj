@@ -129,8 +129,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="MemoryQueue.cpp" />
-    <ClCompile Include="Queue.cpp" />
+    <ClCompile Include="MemoryQueue.c" />
+    <ClCompile Include="Queue.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -26,7 +26,7 @@ static void push(header* h, void* elem) {
 	el->value = elem;
 
 	//is list empty
-	if (h->front == NULL && h->rear == NULL) {
+	if (h->front == NULL) {
 		h->front = el;
 		h->rear = el;
 	}

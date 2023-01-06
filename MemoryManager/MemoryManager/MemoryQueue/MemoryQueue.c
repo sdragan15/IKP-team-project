@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include "conio.h"
 #include "Structures.h"
-#include "Queue.cpp"
+#include "Queue.c"
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
@@ -24,7 +24,7 @@
 
 int main()
 {
-    sockaddr_in queueAddress;
+    struct sockaddr_in queueAddress;
     char dataBuffer[BUFFER_SIZE];
 
     WSADATA wsaData;
@@ -63,10 +63,12 @@ int main()
 
     printf("Simple UDP server started and waiting client messages.\n");
 
+    //inicijalizacija queue-a
+    header* handle = create();
     while (1)
     {
-        sockaddr_in clientAddress;
-        sockaddr_in serverAddress;
+        struct sockaddr_in clientAddress;
+        struct sockaddr_in serverAddress;
 
         memset(&clientAddress, 0, sizeof(clientAddress));
         memset(&serverAddress, 0, sizeof(serverAddress));
@@ -78,8 +80,6 @@ int main()
 
         int sockAddrLen = sizeof(clientAddress);
 
-        header* handle = create();
-        
         iResult = recvfrom(queueSocket,				// Own socket
             dataBuffer,					// Buffer that will be used for receiving message
             BUFFER_SIZE,					// Maximal size of buffer
@@ -103,7 +103,6 @@ int main()
 
         printf("Dodavanje u kju\n");
         request* podac = (request*)dataBuffer;
-        podac->portOfClient = clientPort;
         push(handle, podac);
 
         printf("Vadjenje iz kjua\n");
@@ -130,8 +129,8 @@ int main()
         }
 
 
-        printf("%d %d %d\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), podaci->portOfClient);
-        printf("Client connected from ip: %s, port: %d, sent: %s.\n", ipAddress, clientPort, dataBuffer);
+        printf("%d %d %d %p\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
+        printf("Client connected from ip: %s, port: %d.\n", ipAddress, clientPort);
 
     }
 

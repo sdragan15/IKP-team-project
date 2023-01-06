@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MemoryQueue.cpp">
+    <ClCompile Include="MemoryQueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Queue.cpp">
+    <ClCompile Include="Queue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

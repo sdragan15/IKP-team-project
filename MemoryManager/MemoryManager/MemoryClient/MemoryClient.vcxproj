@@ -128,7 +128,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DataStruct.c" />
     <ClCompile Include="MemoryClient.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DataStruct.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

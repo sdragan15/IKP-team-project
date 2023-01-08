@@ -128,8 +128,12 @@ int main()
             return 1;
         }
 
-
-        printf("%d %d %d %p\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
+        if (ntohl(podaci->command) == 1) {
+            printf("%d %d %d\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient));
+        }
+        else{
+            printf("%d %d %d %lu\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
+        }
         printf("Client connected from ip: %s, port: %d.\n", ipAddress, clientPort);
 
     }

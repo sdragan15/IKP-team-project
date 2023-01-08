@@ -27,9 +27,9 @@ int counter = 0;
 char* arrayOfMemory[10];
 
 int allocate_memory();
-char* print_all_allocated_memory();
+char* print_all_allocated_memory(HashTable* ht);
 
-request* userMenu() {
+request* userMenu(HashTable* ht) {
     char dataBuffer[BUFFER_SIZE];
     int command;
     int numOfBytes;
@@ -54,7 +54,7 @@ request* userMenu() {
         }
         else if (command == 2) {
             reqClient->command = htonl(2);
-            reqClient->memoryFree = print_all_allocated_memory();
+            reqClient->memoryFree = print_all_allocated_memory(ht);
             //printf("aaaa %d\n", *arrayOfMemory[0]);
             reqClient->numOfBytes = htonl(4);
 
@@ -78,22 +78,23 @@ int allocate_memory() {
     return atoi(dataBuffer);
 }
 
-char* print_all_allocated_memory() {
+char* print_all_allocated_memory(HashTable* ht) {
     //popunjavamo strukturu koju cemo slati ka redu
     char dataBuffer[BUFFER_SIZE];
-    for (int i = 0; i < 10; i++) {
+    /*for (int i = 0; i < 10; i++) {
         printf("[%d]: %lu\n", i, arrayOfMemory[i]);
-    }
-    printf("\t\tChoose memory from list:");
+    }*/
+    print_table(ht);
+    printf("\t\tChoose memory from hash table:");
     gets_s(dataBuffer, BUFFER_SIZE);
 
-    //DataItem* findedEl = searchh(atoi(dataBuffer));
-    //return findedEl->data;
-    return arrayOfMemory[atoi(dataBuffer)];
+    //return arrayOfMemory[atoi(dataBuffer)];
+    return (char*)ht_search(ht, atoi(dataBuffer));
 }
 
 int main()
 {
+    HashTable* ht = create_table(CAPACITY);
     struct sockaddr_in queueAddress;
     struct sockaddr_in serverAddress;
 
@@ -161,7 +162,7 @@ int main()
     //kraj iscitavanja porta
 
     while (1) {
-        request* client = userMenu();
+        request* client = userMenu(ht);
         if (client->command == -1) {
             printf("User doesn't want more request. Shut down...\n");
             break;
@@ -205,7 +206,9 @@ int main()
         response* podac = (response*)dataBufferRecv;
 
         printf("Received message: %lu.\n", ntohl(podac->memoryStart));
-        arrayOfMemory[counter++] = ntohl(podac->memoryStart);
+        //arrayOfMemory[counter++] = ntohl(podac->memoryStart);
+
+        ht_insert(ht, counter++, ntohl(podac->memoryStart));
     }
     
     printf("Press any key to exit: ");

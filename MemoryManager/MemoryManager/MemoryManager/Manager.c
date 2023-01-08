@@ -87,7 +87,6 @@ char* alocate_memory(char* memory, int bytes) {
 			if (count >= total_memory) {
 				res = i - total_memory + 1;
 				update_memory(memory, res, i, OCCUPIED_CHR);
-				print_memory(memory);
 				return memory + res + HEADER_SIZE;
 			}
 		}

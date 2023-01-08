@@ -16,7 +16,8 @@
 #pragma comment (lib, "AdvApi32.lib")
 
 #define SERVER_IP_ADDRESS "127.0.0.1"		// IPv4 address of server
-#define SERVER_PORT 15000					// Port number of server that will be used for communication with clients
+#define QUEUE_PORT 15000					// Port number of server that will be used for communication with clients
+#define SERVER_PORT 15002
 #define BUFFER_SIZE 512						// Size of buffer that will be used for sending and receiving messages to client
 #define SERVER_SLEEP_TIME 50
 
@@ -89,10 +90,11 @@ void print_all_allocated_memory(char* arrayAddr[10]) {
 int main()
 {
     // Server address structure
+    struct sockaddr_in queueAddress;
     struct sockaddr_in serverAddress;
 
     // Size of server address structure
-    int sockAddrLen = sizeof(serverAddress);
+    int sockAddrLen = sizeof(queueAddress);
 
     // Buffer that will be used for sending and receiving messages to client
     char dataBuffer[BUFFER_SIZE];
@@ -111,9 +113,14 @@ int main()
     }
 
     // Initialize memory for address structure
+    memset((char*)&queueAddress, 0, sizeof(queueAddress));
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
 
     // Initialize address structure of server
+    queueAddress.sin_family = AF_INET;								// IPv4 address famly
+    queueAddress.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);	// Set server IP address using string
+    queueAddress.sin_port = htons(QUEUE_PORT);					// Set server port
+
     serverAddress.sin_family = AF_INET;								// IPv4 address famly
     serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);	// Set server IP address using string
     serverAddress.sin_port = htons(SERVER_PORT);					// Set server port
@@ -205,12 +212,13 @@ int main()
             continue;
         }
         
+
         iResult = sendto(clientSocket,						// Own socket
             (char*)*(&client),						// Text of message
             sizeof(request),				// Message size
             0,									// No flags
-            (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
-            sizeof(serverAddress));			// Size of sockadr_in structure
+            (SOCKADDR*)&queueAddress,		// Address structure of server (type, IP address and port)
+            sizeof(queueAddress));			// Size of sockadr_in structure
 
         // Check if message is succesfully sent. If not, close client application
         if (iResult == SOCKET_ERROR)
@@ -220,6 +228,45 @@ int main()
             WSACleanup();
             return 1;
         }
+
+        iResult = select(0 /* ignored */, &set, &set, NULL, &timeVal);
+
+        // lets check if there was an error during select
+        if (iResult == SOCKET_ERROR)
+        {
+            fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
+            continue;
+        }
+
+        // now, lets check if there are any sockets ready
+        if (iResult == 0)
+        {
+            // there are no ready sockets, sleep for a while and check again
+            Sleep(SERVER_SLEEP_TIME);
+            continue;
+        }
+
+        char dataBufferRecv[BUFFER_SIZE];
+        memset(dataBufferRecv, 0, BUFFER_SIZE);
+
+        iResult = recvfrom(clientSocket,				// Own socket
+            dataBufferRecv,					// Buffer that will be used for receiving message
+            BUFFER_SIZE,					// Maximal size of buffer
+            0,							// No flags
+            (SOCKADDR*)&serverAddress,	// Client information from received message (ip address and port)
+            &sockAddrLen);				// Size of sockadd_in structure
+
+        if (iResult == SOCKET_ERROR)
+        {
+            printf("recvfrom failed with error: %d\n", WSAGetLastError());
+            continue;
+        }
+
+        dataBufferRecv[iResult] = '\0';
+
+        response* podac = (response*)dataBufferRecv;
+
+        printf("Received message: %lu.\n", ntohl(podac->memoryStart));
     }
     
 

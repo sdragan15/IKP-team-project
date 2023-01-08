@@ -145,7 +145,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\MemoryManager\Manager.c" />
+    <ClCompile Include="queue.c" />
     <ClCompile Include="server.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MemoryCommon\MemoryCommon.vcxproj">
+      <Project>{7e9e9579-2d95-4985-8451-cac5b1fb3f78}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

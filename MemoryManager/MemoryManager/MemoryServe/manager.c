@@ -1,6 +1,6 @@
 #include <stdlib.h>  
 #include <stdio.h>
-#include "memory.h"
+#include "manager.h"
 
 int MEMORY_SIZE = 100;
 const int BLOCK_SIZE = 5;
@@ -10,14 +10,14 @@ const char OCCUPIED_CHR = '0';
 const char HEADER_CHR = 'X';
 const int INCREASE_MEMORY = 20;
 
-void init_memory(char* memory, int start) {
+extern void init_memory(char* memory, int start) {
 	int i = 0;
 	for (i = start; i < MEMORY_SIZE; i++) {
 		memory[i] = FREE_CHR;
 	}
 }
 
-void print_memory(char* memory) {
+extern void print_memory(char* memory) {
 	printf("\n----------------Memory------------------\n\n");
 	int i = 0;
 	int columns = 5;
@@ -39,7 +39,7 @@ void print_memory(char* memory) {
 	printf("\n\n");
 }
 
-void update_memory(char* memory, int from, int to, char value) {
+extern void update_memory(char* memory, int from, int to, char value) {
 	int i = from;
 	int count = 0;
 	for (i = from; i <= to; i++) {
@@ -54,7 +54,7 @@ void update_memory(char* memory, int from, int to, char value) {
 	}
 }
 
-char* alocate_memory(char* memory, int bytes) {
+extern char* alocate_memory(char* memory, int bytes) {
 	if (bytes <= 0) {
 		printf("Number of bytes must be greater than 0");
 		return NULL;
@@ -103,7 +103,11 @@ char* alocate_memory(char* memory, int bytes) {
 	return alocate_memory(memory, bytes);
 }
 
-void free_memory(char* memory, char* start) {
+extern char* test(char* mem, int bytes) {
+	return mem;
+}
+
+extern void free_memory(char* memory, char* start) {
 	char* i;
 	start -= HEADER_SIZE;
 	for (i = start; i < start + HEADER_SIZE; i++) {
@@ -115,13 +119,12 @@ void free_memory(char* memory, char* start) {
 			*i = FREE_CHR;
 		}
 		else {
-			print_memory(memory);
 			return;
 		}
 	}
 }
 
-void print_statistics(char* memory) {
+extern void print_statistics(char* memory) {
 	int i;
 	int free = 0;
 	int occupied = 0;

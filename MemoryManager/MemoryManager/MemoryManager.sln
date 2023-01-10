@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32228.430
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryManager", "MemoryManager\MemoryManager.vcxproj", "{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryClient", "MemoryClient\MemoryClient.vcxproj", "{EB1E96A5-45E3-429E-863A-0338ECAF8A63}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryCommon", "MemoryCommon\MemoryCommon.vcxproj", "{7E9E9579-2D95-4985-8451-CAC5B1FB3F78}"
@@ -21,14 +19,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Debug|x64.ActiveCfg = Debug|x64
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Debug|x64.Build.0 = Debug|x64
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Debug|x86.ActiveCfg = Debug|Win32
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Debug|x86.Build.0 = Debug|Win32
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Release|x64.ActiveCfg = Release|x64
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Release|x64.Build.0 = Release|x64
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Release|x86.ActiveCfg = Release|Win32
-		{A3B64333-DFCF-485F-AAD5-33CD0DDCC821}.Release|x86.Build.0 = Release|Win32
 		{EB1E96A5-45E3-429E-863A-0338ECAF8A63}.Debug|x64.ActiveCfg = Debug|x64
 		{EB1E96A5-45E3-429E-863A-0338ECAF8A63}.Debug|x64.Build.0 = Debug|x64
 		{EB1E96A5-45E3-429E-863A-0338ECAF8A63}.Debug|x86.ActiveCfg = Debug|Win32

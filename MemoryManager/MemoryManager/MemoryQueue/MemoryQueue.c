@@ -113,6 +113,7 @@ int main()
         client.numOfBytes = 1;
         client.command = htonl(1);
 
+
         iResult = sendto(queueSocket,						// Own socket
             (char*)podaci,						// Text of message
             sizeof(request),				// Message size
@@ -132,7 +133,7 @@ int main()
             printf("%d %d %d\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient));
         }
         else{
-            printf("%d %d %d %lu\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
+            printf("%d %d %d %p\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
         }
         printf("Client connected from ip: %s, port: %d.\n", ipAddress, clientPort);
 

@@ -12,7 +12,7 @@
 #include <ws2spi.h>
 #include "conio.h"
 #include "Structures.h"
-#include "memory.h"
+#include "manager.h"
 #include "queue.c"
 
 
@@ -35,7 +35,6 @@ HANDLE semaphoreProcess;
 char* allocate_mem(int bytes) {
     char* response = alocate_memory(memory, bytes);
     print_memory(memory);
-
     return response;
 }
 
@@ -45,33 +44,133 @@ void free_mem(char* start) {
 }
 
 void handle_request(request* data) {
-    printf("Doing...\n");
-    printf("%d\n", ntohl(data->command));
     switch (ntohl(data->command)) {
     case 1:
         if (queueProcess != NULL) {
             push(queueProcess, data, semaphoreProcess);
-            printf("Process Pushed: %d\n", ntohl(data->numOfBytes));
         }
         break;
     case 2:
         if (queueFree != NULL) {
-            push(queueFree, ntohl(1122), semaphoreFree);
-            printf("Send Pushed: %d\n", ntohl(data->numOfBytes));
+            push(queueFree, data, semaphoreFree);
         }
         break;
     }
-
-    printf("Done\n");
 
     return 0;
 }
 
 void free_response() {
+    struct sockaddr_in serverAddress;
+    int sockAddrLen = sizeof(serverAddress);
+    char dataBuffer[BUFFER_SIZE];
+    WSADATA wsaData;
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    if (iResult != 0)
+    {
+        printf("WSAStartup failed with error: %d\n", iResult);
+        return 1;
+    }
+    memset((char*)&serverAddress, 0, sizeof(serverAddress));
+
+    SOCKET clientSocket = socket(AF_INET,      // IPv4 address famly
+        SOCK_DGRAM,   // Datagram socket
+        IPPROTO_UDP); // UDP protocol
+
+    if (clientSocket == INVALID_SOCKET)
+    {
+        printf("Creating socket failed with error: %d\n", WSAGetLastError());
+        WSACleanup();
+        return 1;
+    }
+
+    struct sockaddr_in sin;
+    socklen_t slen;
+    int sock;
+    short unsigned int port;
+
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = htonl(INADDR_ANY);
+    sin.sin_port = 0;
+
+    iResult = bind(clientSocket, (struct sockaddr*)&sin, sizeof(sin));
+
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("Socket bind failed with error: %d\n", WSAGetLastError());
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    unsigned long int nonBlockingMode = 1;
+    iResult = ioctlsocket(clientSocket, FIONBIO, &nonBlockingMode);
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("ioctlsocket failed with error: %ld\n", WSAGetLastError());
+        return 1;
+    }
+
+    FD_SET set;
+    struct timeval timeVal;
+
+    FD_ZERO(&set);
+    FD_SET(clientSocket, &set);
+
+    timeVal.tv_sec = 0;
+    timeVal.tv_usec = 0;
+
     while (1) {
-        int bytes = pop(queueFree, semaphoreFree);
-        if (bytes != NULL) {
-            printf("Freed...");
+        request* data = pop(queueFree, semaphoreFree);
+
+
+        if (data != NULL) {
+            free_mem(data->memoryFree);
+
+            int client_port = ntohs(data->portOfClient);
+
+            serverAddress.sin_family = AF_INET;								// IPv4 address famly
+            serverAddress.sin_addr.s_addr = inet_addr(CLIENT_IP_ADDRESS);	// Set server IP address using string
+            serverAddress.sin_port = htons(client_port);					// Set server port
+
+            response* responseData = (response*)malloc(sizeof(response));
+
+            responseData->statusCode = ntohl(1);
+
+            while (1) {
+                iResult = select(0 /* ignored */, &set, &set, NULL, &timeVal);
+
+                if (iResult == SOCKET_ERROR)
+                {
+                    fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
+                    continue;
+                }
+
+                if (iResult == 0)
+                {
+                    Sleep(CLIENT_SLEEP_TIME);
+                    continue;
+                }
+
+                iResult = sendto(clientSocket,						// Own socket
+                    (char*)responseData,						// Text of message
+                    sizeof(response),				// Message size
+                    0,									// No flags
+                    (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
+                    sizeof(serverAddress));			// Size of sockadr_in structure
+
+
+                if (iResult == SOCKET_ERROR)
+                {
+                    printf("sendto failed with error: %d\n", WSAGetLastError());
+                    closesocket(clientSocket);
+                    WSACleanup();
+                    return 1;
+                }
+
+                break;
+            }
         }
         Sleep(1000);
     }
@@ -168,8 +267,7 @@ void process_response() {
 
                 response* responseData = (response*)malloc(sizeof(response));
                 int a = 20;
-                responseData->memoryStart = htonl(res);
-                printf("Result: %lu\n", res);
+                responseData->memoryStart = res;
                 
 
                 iResult = sendto(clientSocket,						// Own socket
@@ -194,6 +292,7 @@ void process_response() {
         Sleep(1000);
     }
 }
+
 
 
 int main()

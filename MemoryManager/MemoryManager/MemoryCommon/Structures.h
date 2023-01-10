@@ -4,7 +4,7 @@ typedef struct clientRequest {
 	int command;
 	int numOfBytes; // alocate memory
 	unsigned short portOfClient;
-	void* memoryFree; //free memory
+	char* memoryFree; //free memory
 } request;
 
 typedef struct serverResponse {

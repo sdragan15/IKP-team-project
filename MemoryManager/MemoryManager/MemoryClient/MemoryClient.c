@@ -170,7 +170,7 @@ int main()
         client->portOfClient = htons(port);
 
         iResult = sendto(clientSocket,						// Own socket
-            (char*)*(&client),						// Text of message
+            (char*)client,						// Text of message
             sizeof(request),				// Message size
             0,									// No flags
             (SOCKADDR*)&queueAddress,		// Address structure of server (type, IP address and port)
@@ -205,10 +205,10 @@ int main()
 
         response* podac = (response*)dataBufferRecv;
 
-        printf("Received message: %lu.\n", ntohl(podac->memoryStart));
+        printf("Received message: %p.\n", podac->memoryStart);
         //arrayOfMemory[counter++] = ntohl(podac->memoryStart);
 
-        ht_insert(ht, counter++, ntohl(podac->memoryStart));
+        ht_insert(ht, counter++, podac->memoryStart);
     }
     
     printf("Press any key to exit: ");

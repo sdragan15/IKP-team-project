@@ -141,10 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\MemoryManager\memory.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\MemoryManager\Manager.c" />
+    <ClCompile Include="manager.c" />
     <ClCompile Include="queue.c" />
     <ClCompile Include="server.c" />
   </ItemGroup>
@@ -152,6 +149,9 @@
     <ProjectReference Include="..\MemoryCommon\MemoryCommon.vcxproj">
       <Project>{7e9e9579-2d95-4985-8451-cac5b1fb3f78}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="manager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

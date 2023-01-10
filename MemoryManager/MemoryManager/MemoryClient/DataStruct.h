@@ -21,13 +21,13 @@ typedef struct HashTable {
 } HashTable;
 
 unsigned int hash_function(int key);
-Ht_item* create_item(char* key, unsigned int value);
+Ht_item* create_item(char* key, char* value);
 HashTable* create_table(int size);
 void free_item(Ht_item* item);
 void free_table(HashTable* table);
 void handle_collision(HashTable* table, unsigned long index, Ht_item* item);
-void ht_insert(HashTable* table, int key, unsigned int value);
-unsigned int ht_search(HashTable* table, int key);
+void ht_insert(HashTable* table, int key, char* value);
+char* ht_search(HashTable* table, int key);
 void print_search(HashTable* table, int key);
 void print_table(HashTable* table);
 

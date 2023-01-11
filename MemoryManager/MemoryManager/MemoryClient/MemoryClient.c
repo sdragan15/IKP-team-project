@@ -24,6 +24,7 @@
 #define SERVER_SLEEP_TIME 50
 
 int counter = 0;
+int usersChoice = -1;
 char* arrayOfMemory[10];
 
 int allocate_memory();
@@ -56,7 +57,7 @@ request* userMenu(HashTable* ht) {
             reqClient->command = htonl(2);
             reqClient->memoryFree = print_all_allocated_memory(ht);
             //printf("aaaa %d\n", *arrayOfMemory[0]);
-            reqClient->numOfBytes = htonl(4);
+            //reqClient->numOfBytes = htonl(4);
 
         }
         else if (command == 3) {
@@ -89,6 +90,7 @@ char* print_all_allocated_memory(HashTable* ht) {
     gets_s(dataBuffer, BUFFER_SIZE);
 
     //return arrayOfMemory[atoi(dataBuffer)];
+    usersChoice = atoi(dataBuffer); //pamti se kljuc memorije koju je klijent trazio da moze da se oslobodi iz tabele
     return (char*)ht_search(ht, atoi(dataBuffer));
 }
 
@@ -205,10 +207,15 @@ int main()
 
         response* podac = (response*)dataBufferRecv;
 
-        printf("Received message: %p.\n", podac->memoryStart);
-        //arrayOfMemory[counter++] = ntohl(podac->memoryStart);
-
-        ht_insert(ht, counter++, podac->memoryStart);
+        if (podac->statusCode == ntohl(1) || podac->statusCode == ntohl(2)) {
+            printf("Server successfully freed memory");
+            ht_delete(ht, usersChoice);
+        }
+        else {
+            printf("Server successfully allocated memory. Address of memory: %p.\n", podac->memoryStart);
+            ht_insert(ht, counter++, podac->memoryStart);
+        }
+        //arrayOfMemory[counter++] = ntohl(podac->memoryStart);    
     }
     
     printf("Press any key to exit: ");

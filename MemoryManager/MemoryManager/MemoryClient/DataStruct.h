@@ -30,5 +30,6 @@ void ht_insert(HashTable* table, int key, char* value);
 char* ht_search(HashTable* table, int key);
 void print_search(HashTable* table, int key);
 void print_table(HashTable* table);
+void ht_delete(HashTable* table, int key);
 
 #endif

@@ -124,6 +124,26 @@ char* ht_search(HashTable* table, int key) {
     return NULL;
 }
 
+void ht_delete(HashTable* table, int key) {
+    // Deletes an item from the table
+    int index = hash_function(key);
+    Ht_item* item = table->items[index];
+    if (item == NULL) {
+        // Does not exist. Return
+        return;
+    }
+    else {
+        if (item->key == key) {
+            // No collision chain. Remove the item
+            // and set table index to NULL
+            table->items[index] = NULL;
+            free_item(item);
+            table->count--;
+            return;
+        }
+    }
+}
+
 void print_search(HashTable* table, int key) {
     char* val;
     if ((val = ht_search(table, key)) == NULL) {
@@ -138,7 +158,7 @@ void print_search(HashTable* table, int key) {
 void print_table(HashTable* table) {
     printf("\nHash Table\n-------------------\n");
     for (int i = 0; i < table->size; i++) {
-        if (table->items[i]) {
+        if (table->items[i] != NULL) {
             printf("Index:%d, Key:%d, Value:%p\n", i, table->items[i]->key, table->items[i]->value);
         }
     }

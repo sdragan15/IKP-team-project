@@ -28,7 +28,7 @@ int usersChoice = -1;
 char* arrayOfMemory[10];
 
 int allocate_memory();
-char* print_all_allocated_memory(HashTable* ht);
+int print_all_allocated_memory(HashTable* ht);
 
 request* userMenu(HashTable* ht) {
     char dataBuffer[BUFFER_SIZE];
@@ -55,7 +55,7 @@ request* userMenu(HashTable* ht) {
         }
         else if (command == 2) {
             reqClient->command = htonl(2);
-            reqClient->memoryFree = print_all_allocated_memory(ht);
+            reqClient->memoryFree = htonl(print_all_allocated_memory(ht));
             //printf("aaaa %d\n", *arrayOfMemory[0]);
             //reqClient->numOfBytes = htonl(4);
 
@@ -79,7 +79,7 @@ int allocate_memory() {
     return atoi(dataBuffer);
 }
 
-char* print_all_allocated_memory(HashTable* ht) {
+int print_all_allocated_memory(HashTable* ht) {
     //popunjavamo strukturu koju cemo slati ka redu
     char dataBuffer[BUFFER_SIZE];
     /*for (int i = 0; i < 10; i++) {
@@ -91,7 +91,7 @@ char* print_all_allocated_memory(HashTable* ht) {
 
     //return arrayOfMemory[atoi(dataBuffer)];
     usersChoice = atoi(dataBuffer); //pamti se kljuc memorije koju je klijent trazio da moze da se oslobodi iz tabele
-    return (char*)ht_search(ht, atoi(dataBuffer));
+    return (int)ht_search(ht, atoi(dataBuffer));
 }
 
 int main()
@@ -212,8 +212,8 @@ int main()
             ht_delete(ht, usersChoice);
         }
         else {
-            printf("Server successfully allocated memory. Address of memory: %p.\n", podac->memoryStart);
-            ht_insert(ht, counter++, podac->memoryStart);
+            printf("Server successfully allocated memory. Address of memory: %d.\n", ntohl(podac->memoryStart));
+            ht_insert(ht, counter++, ntohl(podac->memoryStart));
         }
         //arrayOfMemory[counter++] = ntohl(podac->memoryStart);    
     }

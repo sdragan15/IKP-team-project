@@ -13,7 +13,7 @@ typedef struct Ht_item Ht_item;
 // Define the Hash Table Item here
 struct Ht_item {
     int key;
-    char* value;
+    int value;
 };
 
 typedef struct HashTable HashTable;
@@ -27,7 +27,7 @@ struct HashTable {
     int count;
 };
 
-Ht_item* create_item(int key, char* value) {
+Ht_item* create_item(int key, int value) {
     // Creates a pointer to a new hash table item
     Ht_item* item = (Ht_item*)malloc(sizeof(Ht_item));
     item->value = value;
@@ -70,7 +70,7 @@ void free_table(HashTable* table) {
 void handle_collision(HashTable* table, unsigned long index, Ht_item* item) {
 }
 
-void ht_insert(HashTable* table, int key, char* value) {
+void ht_insert(HashTable* table, int key, int value) {
     // Create the item
     Ht_item* item = create_item(key, value);
 
@@ -110,7 +110,7 @@ void ht_insert(HashTable* table, int key, char* value) {
     }
 }
 
-char* ht_search(HashTable* table, int key) {
+int ht_search(HashTable* table, int key) {
     // Searches the key in the hashtable
     // and returns NULL if it doesn't exist
     int index = hash_function(key);
@@ -145,13 +145,13 @@ void ht_delete(HashTable* table, int key) {
 }
 
 void print_search(HashTable* table, int key) {
-    char* val;
+    int val;
     if ((val = ht_search(table, key)) == NULL) {
         printf("Key:%d does not exist\n", key);
         return;
     }
     else {
-        printf("Key:%d, Value:%lu\n", key, val);
+        printf("Key:%d, Value:%d\n", key, val);
     }
 }
 
@@ -159,7 +159,7 @@ void print_table(HashTable* table) {
     printf("\nHash Table\n-------------------\n");
     for (int i = 0; i < table->size; i++) {
         if (table->items[i] != NULL) {
-            printf("Index:%d, Key:%d, Value:%p\n", i, table->items[i]->key, table->items[i]->value);
+            printf("Index:%d, Key:%d, Value:%d\n", i, table->items[i]->key, table->items[i]->value);
         }
     }
     printf("-------------------\n\n");

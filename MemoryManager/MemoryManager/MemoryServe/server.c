@@ -32,13 +32,17 @@ header* queueProcess = NULL;
 HANDLE semaphoreFree;
 HANDLE semaphoreProcess;
 
-char* allocate_mem(int bytes) {
-    char* response = alocate_memory(memory, bytes);
+int allocate_mem(int bytes) {
+    int response = alocate_memory(memory, bytes);
+    while (response == -1) {
+        memory = expand_memory(memory);
+        response = alocate_memory(memory, bytes);
+    }
     print_memory(memory);
     return response;
 }
 
-void free_mem(char* start) {
+void free_mem(int start) {
     free_memory(memory, start);
     print_memory(memory);
 }
@@ -126,7 +130,7 @@ void free_response() {
 
 
         if (data != NULL) {
-            free_mem(data->memoryFree);
+            free_mem(ntohl(data->memoryFree));
 
             int client_port = ntohs(data->portOfClient);
 
@@ -243,7 +247,7 @@ void process_response() {
         if (data != NULL) {
             int bytes = ntohl(data->numOfBytes);
             int client_port = ntohs(data->portOfClient);
-            char* res = allocate_mem(bytes);
+            int res = allocate_mem(bytes);
            
 
             serverAddress.sin_family = AF_INET;								// IPv4 address famly
@@ -266,8 +270,7 @@ void process_response() {
                 }
 
                 response* responseData = (response*)malloc(sizeof(response));
-                int a = 20;
-                responseData->memoryStart = res;
+                responseData->memoryStart = htonl(res);
                 
 
                 iResult = sendto(clientSocket,						// Own socket
@@ -297,7 +300,7 @@ void process_response() {
 
 int main()
 {
-    memory = (char*)malloc(100);
+    memory = create_memory();
     init_memory(memory, 0);
 
     struct sockaddr_in serverAddress;

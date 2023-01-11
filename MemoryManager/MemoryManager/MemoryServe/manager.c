@@ -1,6 +1,7 @@
 #include <stdlib.h>  
 #include <stdio.h>
 #include "manager.h"
+#include <Windows.h>
 
 int MEMORY_SIZE = 100;
 const int BLOCK_SIZE = 5;
@@ -10,14 +11,36 @@ const char OCCUPIED_CHR = '0';
 const char HEADER_CHR = 'X';
 const int INCREASE_MEMORY = 20;
 
+HANDLE mutex;
+
+extern char* create_memory() {
+	char* mem = (char*)malloc(100);
+	mutex = CreateMutex(
+		NULL,
+		0,
+		NULL
+	);
+
+	if (mutex == NULL)
+	{
+		printf("CreateMutex error: %d\n", GetLastError());
+		return NULL;
+	}
+
+	return mem;
+}
+
 extern void init_memory(char* memory, int start) {
 	int i = 0;
+	WaitForSingleObject(mutex, INFINITE);
 	for (i = start; i < MEMORY_SIZE; i++) {
 		memory[i] = FREE_CHR;
 	}
+	ReleaseMutex(mutex);
 }
 
 extern void print_memory(char* memory) {
+	WaitForSingleObject(mutex, INFINITE);
 	printf("\n----------------Memory------------------\n\n");
 	int i = 0;
 	int columns = 5;
@@ -37,11 +60,13 @@ extern void print_memory(char* memory) {
 
 	}
 	printf("\n\n");
+	ReleaseMutex(mutex);
 }
 
 extern void update_memory(char* memory, int from, int to, char value) {
 	int i = from;
 	int count = 0;
+	WaitForSingleObject(mutex, INFINITE);
 	for (i = from; i <= to; i++) {
 		if (count < HEADER_SIZE) {
 			memory[i] = HEADER_CHR;
@@ -52,11 +77,14 @@ extern void update_memory(char* memory, int from, int to, char value) {
 		}
 
 	}
+	ReleaseMutex(mutex);
 }
 
-extern char* alocate_memory(char* memory, int bytes) {
+extern int alocate_memory(char* memory, int bytes) {
+	WaitForSingleObject(mutex, INFINITE);
 	if (bytes <= 0) {
 		printf("Number of bytes must be greater than 0");
+		ReleaseMutex(mutex);
 		return NULL;
 	}
 
@@ -87,7 +115,8 @@ extern char* alocate_memory(char* memory, int bytes) {
 			if (count >= total_memory) {
 				res = i - total_memory + 1;
 				update_memory(memory, res, i, OCCUPIED_CHR);
-				return memory + res + HEADER_SIZE;
+				ReleaseMutex(mutex);
+				return res + HEADER_SIZE;
 			}
 		}
 		else {
@@ -95,33 +124,41 @@ extern char* alocate_memory(char* memory, int bytes) {
 		}
 
 	}
+	ReleaseMutex(mutex);
+	return -1;
+}
 
+extern char* expand_memory(char* memory) {
 	MEMORY_SIZE += INCREASE_MEMORY;
 	memory = (char*)realloc(memory, MEMORY_SIZE);
 	init_memory(memory, MEMORY_SIZE - INCREASE_MEMORY);
 	printf("Expanding memory...");
-	return alocate_memory(memory, bytes);
+	return memory;
 }
 
 extern char* test(char* mem, int bytes) {
 	return mem;
 }
 
-extern void free_memory(char* memory, char* start) {
+extern void free_memory(char* memory, int start) {
 	char* i;
-	start -= HEADER_SIZE;
-	for (i = start; i < start + HEADER_SIZE; i++) {
+	WaitForSingleObject(mutex, INFINITE);
+	char* start_free = memory + start;
+	start_free -= HEADER_SIZE;
+	for (i = start_free; i < start_free + HEADER_SIZE; i++) {
 		*i = FREE_CHR;
 	}
 
-	for (i = start + HEADER_SIZE; i < memory + MEMORY_SIZE; i++) {
+	for (i = start_free + HEADER_SIZE; i < memory + MEMORY_SIZE; i++) {
 		if (*i != FREE_CHR && *i != HEADER_CHR) {
 			*i = FREE_CHR;
 		}
 		else {
+			ReleaseMutex(mutex);
 			return;
 		}
 	}
+	ReleaseMutex(mutex);
 }
 
 extern void print_statistics(char* memory) {
@@ -130,6 +167,7 @@ extern void print_statistics(char* memory) {
 	int occupied = 0;
 	int largest_free_block = 0;
 	int temp_free = 0;
+	WaitForSingleObject(mutex, INFINITE);
 	for (i = 0; i < MEMORY_SIZE; i++) {
 		if (memory[i] == FREE_CHR) {
 			free++;
@@ -155,4 +193,6 @@ extern void print_statistics(char* memory) {
 	printf("Number of occupied bytes: %d\n", occupied);
 	printf("Memory fragmentation: %.2lf%%\n", fregmentation);
 	printf("--------------------------------------------------------------");
+
+	ReleaseMutex(mutex);
 }

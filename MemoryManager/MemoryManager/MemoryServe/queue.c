@@ -54,7 +54,7 @@ static void* pop(header* h, HANDLE semaphore) {
 		return NULL;
 	}
 	else {
-		h->front = (element*)popEl->next;
+		h->front = (element*)(popEl->next);
 		void* value = popEl->value;
 		free(popEl);
 		ReleaseSemaphore(semaphore, 1, NULL);

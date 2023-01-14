@@ -32,22 +32,30 @@ header* queueProcess = NULL;
 HANDLE semaphoreFree;
 HANDLE semaphoreProcess;
 
+HANDLE mutex = NULL;
+
 int allocate_mem(int bytes) {
+    WaitForSingleObject(mutex, INFINITE);
     int response = alocate_memory(memory, bytes);
     while (response == -1) {
         memory = expand_memory(memory);
+        ReleaseMutex(mutex);
         response = alocate_memory(memory, bytes);
     }
     print_memory(memory);
+    ReleaseMutex(mutex);
     return response;
 }
 
 void free_mem(int start) {
+    WaitForSingleObject(mutex, INFINITE);
     free_memory(memory, start);
     print_memory(memory);
+    ReleaseMutex(mutex);
 }
 
 void handle_request(request* data) {
+    printf("Received from %d\n", ntohs(data->portOfClient));
     switch (ntohl(data->command)) {
     case 1:
         if (queueProcess != NULL) {
@@ -60,7 +68,6 @@ void handle_request(request* data) {
         }
         break;
     }
-
     return 0;
 }
 
@@ -148,6 +155,7 @@ void free_response() {
                 if (iResult == SOCKET_ERROR)
                 {
                     fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
+                    printf("Waiting for free response...\n");
                     continue;
                 }
 
@@ -164,6 +172,7 @@ void free_response() {
                     (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
                     sizeof(serverAddress));			// Size of sockadr_in structure
 
+                printf("Free response done.\n");
 
                 if (iResult == SOCKET_ERROR)
                 {
@@ -178,6 +187,18 @@ void free_response() {
         }
         Sleep(1000);
     }
+
+    iResult = closesocket(clientSocket);
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("closesocket failed with error: %ld\n", WSAGetLastError());
+        WSACleanup();
+        return 1;
+    }
+
+    printf("Server successfully shut down.\n");
+
+    WSACleanup();
 }
 
 void process_response() {
@@ -249,6 +270,7 @@ void process_response() {
             int client_port = ntohs(data->portOfClient);
             int res = allocate_mem(bytes);
            
+            printf("Sending to %d\n", client_port);
 
             serverAddress.sin_family = AF_INET;								// IPv4 address famly
             serverAddress.sin_addr.s_addr = inet_addr(CLIENT_IP_ADDRESS);	// Set server IP address using string
@@ -260,6 +282,7 @@ void process_response() {
                 if (iResult == SOCKET_ERROR)
                 {
                     fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
+                    printf("Waiting for send...\n");
                     continue;
                 }
 
@@ -280,6 +303,7 @@ void process_response() {
                     (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
                     sizeof(serverAddress));			// Size of sockadr_in structure
 
+                printf("Send done.\n");
                 
                 if (iResult == SOCKET_ERROR)
                 {
@@ -294,13 +318,37 @@ void process_response() {
         }
         Sleep(1000);
     }
+
+    iResult = closesocket(clientSocket);
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("closesocket failed with error: %ld\n", WSAGetLastError());
+        WSACleanup();
+        return 1;
+    }
+
+    printf("Server successfully shut down.\n");
+
+    WSACleanup();
 }
 
 
 
 int main()
 {
-    memory = create_memory();
+    mutex = CreateMutex(
+        NULL,
+        0,
+        NULL
+    );
+
+    if (mutex == NULL)
+    {
+        printf("CreateMutex error: %d\n", GetLastError());
+        return NULL;
+    }
+
+    memory = create_memory(mutex);
     init_memory(memory, 0);
 
     struct sockaddr_in serverAddress;
@@ -370,11 +418,14 @@ int main()
         &processThreadId
     );
 
+    HANDLE threads[2] = { sendThread, processThread };
+
     queueFree = create(semaphoreFree);
     queueProcess = create(semaphoreProcess);
 
     while (1)
     {
+        printf("Waiting for message...\n");
         iResult = recvfrom(serverSocket,				// Own socket
             dataBuffer,					// Buffer that will be used for receiving message
             BUFFER_SIZE,					// Maximal size of buffer
@@ -382,6 +433,7 @@ int main()
             (SOCKADDR*)&clientAddress,	// Client information from received message (ip address and port)
             &sockAddrLen);				// Size of sockadd_in structure
 
+        printf("Message received.\n");
         if (iResult == SOCKET_ERROR)
         {
             printf("recvfrom failed with error: %d\n", WSAGetLastError());
@@ -397,8 +449,13 @@ int main()
         unsigned short clientPort = ntohs(clientAddress.sin_port);
 
         request* podac = (request*)dataBuffer;
+        request* message = (request*)malloc(sizeof(request));
+        message->command = podac->command;
+        message->memoryFree = podac->memoryFree;
+        message->numOfBytes = podac->numOfBytes;
+        message->portOfClient = podac->portOfClient;
 
-        handle_request(podac);
+        handle_request(message);
 
         //printf("Received message from: %s, port: %d, sent: %s.\n", ipAddress, clientPort, dataBuffer);
     }
@@ -415,6 +472,11 @@ int main()
     printf("Server successfully shut down.\n");
 
     WSACleanup();
+
+    WaitForMultipleObjects(2, threads, FALSE, INFINITE);
+
+    CloseHandle(processThread);
+    CloseHandle(sendThread);
 
     return 0;
 }

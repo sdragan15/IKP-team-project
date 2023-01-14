@@ -16,14 +16,137 @@
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
 
-#define QUEUE_PORT 15000	// Port number of server that will be used for communication with clients
+#define QUEUE_PORT 15000	// Port number of queue that will be used for communication with clients
 #define BUFFER_SIZE 512		// Size of buffer that will be used for sending and receiving messages to clients
 
 #define SERVER_IP_ADDRESS "127.0.0.1"		// IPv4 address of server
 #define SERVER_PORT 15002
 
-int main()
-{
+#define THREAD_SLEEP 500
+
+header* handle = NULL;
+
+HANDLE semaphore;
+
+void send_item() {
+    struct sockaddr_in serverAddress;
+    int sockAddrLen = sizeof(serverAddress);
+    char dataBuffer[BUFFER_SIZE];
+    WSADATA wsaData;
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+    if (iResult != 0)
+    {
+        printf("WSAStartup failed with error: %d\n", iResult);
+        return 1;
+    }
+    memset((char*)&serverAddress, 0, sizeof(serverAddress));
+
+    SOCKET clientSocket = socket(AF_INET,      // IPv4 address famly
+        SOCK_DGRAM,   // Datagram socket
+        IPPROTO_UDP); // UDP protocol
+
+    if (clientSocket == INVALID_SOCKET)
+    {
+        printf("Creating socket failed with error: %d\n", WSAGetLastError());
+        WSACleanup();
+        return 1;
+    }
+
+    struct sockaddr_in sin;
+    socklen_t slen;
+    int sock;
+    short unsigned int port;
+
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = htonl(INADDR_ANY);
+    sin.sin_port = 0;
+
+    iResult = bind(clientSocket, (struct sockaddr*)&sin, sizeof(sin));
+
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("Socket bind failed with error: %d\n", WSAGetLastError());
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    unsigned long int nonBlockingMode = 1;
+    iResult = ioctlsocket(clientSocket, FIONBIO, &nonBlockingMode);
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("ioctlsocket failed with error: %ld\n", WSAGetLastError());
+        return 1;
+    }
+
+    FD_SET set;
+    struct timeval timeVal;
+
+    FD_ZERO(&set);
+    FD_SET(clientSocket, &set);
+
+    timeVal.tv_sec = 0;
+    timeVal.tv_usec = 0;
+
+    while (1) {
+        void* izKjua = pop(handle, semaphore); //vadimo podatke iz kjua
+        if (izKjua == NULL) {
+            Sleep(THREAD_SLEEP);
+            printf(".");
+            continue;
+        }
+        request* podaci = (request*)izKjua;
+
+        request client;
+        client.numOfBytes = 1;
+        client.command = htonl(1);
+
+        printf("Sending from %d\n", ntohs(podaci->portOfClient));
+
+        serverAddress.sin_family = AF_INET;								// IPv4 address famly
+        serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);	// Set server IP address using string
+        serverAddress.sin_port = htons(SERVER_PORT);					// Set server port
+
+        while (1) {
+            iResult = select(0 /* ignored */, &set, &set, NULL, &timeVal);
+
+            if (iResult == SOCKET_ERROR)
+            {
+                fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
+                printf("Waiting for sent...\n");
+                continue;
+            }
+
+            if (iResult == 0)
+            {
+                Sleep(THREAD_SLEEP);
+                continue;
+            }
+
+            iResult = sendto(clientSocket,						// Own socket
+                (char*)podaci,						// Text of message
+                sizeof(response),				// Message size
+                0,									// No flags
+                (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
+                sizeof(serverAddress));			// Size of sockadr_in structure
+
+            printf("Successfully sent.\n");
+
+            if (iResult == SOCKET_ERROR)
+            {
+                printf("sendto failed with error: %d\n", WSAGetLastError());
+                closesocket(clientSocket);
+                WSACleanup();
+                return 1;
+            }
+
+            break;
+        }
+    }
+}
+
+void receive_item() {
     struct sockaddr_in queueAddress;
     char dataBuffer[BUFFER_SIZE];
 
@@ -63,28 +186,17 @@ int main()
 
     printf("Simple UDP server started and waiting client messages.\n");
 
-    //inicijalizacija queue-a
-    header* handle = create();
+    int sockAddrLen = sizeof(queueAddress);
+
     while (1)
     {
-        struct sockaddr_in clientAddress;
-        struct sockaddr_in serverAddress;
-
-        memset(&clientAddress, 0, sizeof(clientAddress));
-        memset(&serverAddress, 0, sizeof(serverAddress));
-        memset(dataBuffer, 0, BUFFER_SIZE);
-
-        serverAddress.sin_family = AF_INET;								// IPv4 address famly
-        serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);	// Set server IP address using string
-        serverAddress.sin_port = htons(SERVER_PORT);
-
-        int sockAddrLen = sizeof(clientAddress);
+        printf("Waiting for message...\n");
 
         iResult = recvfrom(queueSocket,				// Own socket
             dataBuffer,					// Buffer that will be used for receiving message
             BUFFER_SIZE,					// Maximal size of buffer
             0,							// No flags
-            (SOCKADDR*)&clientAddress,	// Client information from received message (ip address and port)
+            (SOCKADDR*)&queueAddress,	// Client information from received message (ip address and port)
             &sockAddrLen);				// Size of sockadd_in structure
 
         if (iResult == SOCKET_ERROR)
@@ -93,50 +205,26 @@ int main()
             continue;
         }
 
+        printf("Received message.\n");
+
         dataBuffer[iResult] = '\0';
 
         char ipAddress[16]; // 15 spaces for decimal notation (for example: "192.168.100.200") + '\0'
 
-        strcpy_s(ipAddress, sizeof(ipAddress), inet_ntoa(clientAddress.sin_addr));
+        strcpy_s(ipAddress, sizeof(ipAddress), inet_ntoa(queueAddress.sin_addr));
 
-        unsigned short clientPort = ntohs(clientAddress.sin_port);
+        unsigned short clientPort = ntohs(queueAddress.sin_port);
 
         printf("Dodavanje u kju\n");
         request* podac = (request*)dataBuffer;
-        push(handle, podac);
 
-        printf("Vadjenje iz kjua\n");
-        void* izKjua = pop(handle); //vadimo podatke iz kjua
-        request* podaci = (request*)izKjua;
+        request* message = (request*)malloc(sizeof(request));
+        message->command = podac->command;
+        message->memoryFree = podac->memoryFree;
+        message->numOfBytes = podac->numOfBytes;
+        message->portOfClient = podac->portOfClient;
 
-        request client;
-        client.numOfBytes = 1;
-        client.command = htonl(1);
-
-
-        iResult = sendto(queueSocket,						// Own socket
-            (char*)podaci,						// Text of message
-            sizeof(request),				// Message size
-            0,									// No flags
-            (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
-            sizeof(serverAddress));
-
-        if (iResult == SOCKET_ERROR)
-        {
-            printf("sendto failed with error: %d\n", WSAGetLastError());
-            closesocket(queueSocket);
-            WSACleanup();
-            return 1;
-        }
-
-        if (ntohl(podaci->command) == 1) {
-            printf("%d %d %d\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient));
-        }
-        else{
-            printf("%d %d %d %p\n", ntohl(podaci->command), ntohl(podaci->numOfBytes), ntohs(podaci->portOfClient), podaci->memoryFree);
-        }
-        printf("Client connected from ip: %s, port: %d.\n", ipAddress, clientPort);
-
+        push(handle, podac, semaphore);
     }
 
     iResult = closesocket(queueSocket);
@@ -147,9 +235,44 @@ int main()
         return 1;
     }
 
-    printf("Server successfully shut down.\n");
+    printf("Queue receive socket successfully shut down.\n");
 
     WSACleanup();
+
+}
+
+int main()
+{
+    HANDLE sendThread;
+    DWORD sendThreadId;
+
+    HANDLE receiveThread;
+    DWORD receiveThreadId;
+
+    sendThread = CreateThread(
+        NULL,
+        0,
+        (LPTHREAD_START_ROUTINE)send_item,
+        NULL,
+        0,
+        &sendThreadId);
+
+    receiveThread = CreateThread(
+        NULL,
+        0,
+        (LPTHREAD_START_ROUTINE)receive_item,
+        NULL,
+        0,
+        &receiveThreadId
+    );
+
+    handle = create(semaphore);
+    HANDLE threads[2] = { receiveThread, sendThread };
+
+    WaitForMultipleObjects(2, threads, FALSE, INFINITE);
+
+    CloseHandle(receiveThread);
+    CloseHandle(sendThread);
 
     return 0;
 }

@@ -163,6 +163,8 @@ int main()
     port = ntohs(sin.sin_port);
     //kraj iscitavanja porta
 
+    printf("Client port: %d\n\n", port);
+
     while (1) {
         request* client = userMenu(ht);
         if (client->command == -1) {
@@ -171,6 +173,7 @@ int main()
         }
         client->portOfClient = htons(port);
 
+        printf("Waiting for sent...\n");
         iResult = sendto(clientSocket,						// Own socket
             (char*)client,						// Text of message
             sizeof(request),				// Message size
@@ -187,8 +190,12 @@ int main()
             return 1;
         }
 
+        printf("Sent\n");
+
         char dataBufferRecv[BUFFER_SIZE];
         memset(dataBufferRecv, 0, BUFFER_SIZE);
+
+        printf("Waiting for receive...\n");
 
         iResult = recvfrom(clientSocket,				// Own socket
             dataBufferRecv,					// Buffer that will be used for receiving message
@@ -202,6 +209,8 @@ int main()
             printf("recvfrom failed with error: %d\n", WSAGetLastError());
             continue;
         }
+
+        printf("Received.\n");
 
         dataBufferRecv[iResult] = '\0';
 

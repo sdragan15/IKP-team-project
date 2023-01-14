@@ -13,20 +13,9 @@ const int INCREASE_MEMORY = 20;
 
 HANDLE mutex;
 
-extern char* create_memory() {
+extern char* create_memory(HANDLE mut) {
+	mutex = mut;
 	char* mem = (char*)malloc(100);
-	mutex = CreateMutex(
-		NULL,
-		0,
-		NULL
-	);
-
-	if (mutex == NULL)
-	{
-		printf("CreateMutex error: %d\n", GetLastError());
-		return NULL;
-	}
-
 	return mem;
 }
 

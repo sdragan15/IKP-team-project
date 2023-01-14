@@ -41,7 +41,8 @@ request* userMenu(HashTable* ht) {
         printf("\tChoose an option: \n");
         printf("\t\t1. Alocate memory\n");
         printf("\t\t2. Free memory\n");
-        printf("\t\t3. Exit program\n");
+        printf("\t\t3. Show statistics\n");
+        printf("\t\t4. Exit program\n");
         printf("\t\tYour choice is: ");
         gets_s(dataBuffer, BUFFER_SIZE);
         printf("-------------------------------------\n");
@@ -61,12 +62,15 @@ request* userMenu(HashTable* ht) {
 
         }
         else if (command == 3) {
+            reqClient->command = htonl(3);
+        }
+        else if (command == 4) {
             reqClient->command = -1;
         }
         else {
             printf("\t\tChoice is not valid, try again!\n");
         }    
-    } while (!(command >= 1 && command <= 3));
+    } while (!(command >= 1 && command <= 4));
  
     return reqClient;
 }
@@ -173,7 +177,6 @@ int main()
         }
         client->portOfClient = htons(port);
 
-        printf("Waiting for sent...\n");
         iResult = sendto(clientSocket,						// Own socket
             (char*)client,						// Text of message
             sizeof(request),				// Message size
@@ -190,7 +193,6 @@ int main()
             return 1;
         }
 
-        printf("Sent\n");
 
         char dataBufferRecv[BUFFER_SIZE];
         memset(dataBufferRecv, 0, BUFFER_SIZE);
@@ -210,15 +212,17 @@ int main()
             continue;
         }
 
-        printf("Received.\n");
 
         dataBufferRecv[iResult] = '\0';
 
         response* podac = (response*)dataBufferRecv;
 
-        if (podac->statusCode == ntohl(1) || podac->statusCode == ntohl(2)) {
-            printf("Server successfully freed memory");
+        if (podac->statusCode == ntohl(1)) {
+            printf("Server successfully freed memory\n");
             ht_delete(ht, usersChoice);
+        }
+        else if (podac->statusCode == ntohl(2)) {
+            printf("Server showed statistics.\n");
         }
         else {
             printf("Server successfully allocated memory. Address of memory: %d.\n", ntohl(podac->memoryStart));

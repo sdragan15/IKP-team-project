@@ -55,7 +55,6 @@ void free_mem(int start) {
 }
 
 void handle_request(request* data) {
-    printf("Received from %d\n", ntohs(data->portOfClient));
     switch (ntohl(data->command)) {
     case 1:
         if (queueProcess != NULL) {
@@ -67,6 +66,10 @@ void handle_request(request* data) {
             push(queueFree, data, semaphoreFree);
         }
         break;
+    case 3:
+        if (queueFree != NULL) {
+            push(queueFree, data, semaphoreFree);
+        }
     }
     return 0;
 }
@@ -137,7 +140,13 @@ void free_response() {
 
 
         if (data != NULL) {
-            free_mem(ntohl(data->memoryFree));
+            if (ntohl(data->command) == 2) {
+                free_mem(ntohl(data->memoryFree));
+            }
+            else {
+                print_statistics(memory);
+            }
+            
 
             int client_port = ntohs(data->portOfClient);
 
@@ -146,8 +155,13 @@ void free_response() {
             serverAddress.sin_port = htons(client_port);					// Set server port
 
             response* responseData = (response*)malloc(sizeof(response));
-
-            responseData->statusCode = ntohl(1);
+            
+            if (ntohl(data->command) == 2) {
+                responseData->statusCode = ntohl(1);
+            }
+            else {
+                responseData->statusCode = ntohl(2);
+            }
 
             while (1) {
                 iResult = select(0 /* ignored */, &set, &set, NULL, &timeVal);
@@ -155,7 +169,6 @@ void free_response() {
                 if (iResult == SOCKET_ERROR)
                 {
                     fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
-                    printf("Waiting for free response...\n");
                     continue;
                 }
 
@@ -172,7 +185,6 @@ void free_response() {
                     (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
                     sizeof(serverAddress));			// Size of sockadr_in structure
 
-                printf("Free response done.\n");
 
                 if (iResult == SOCKET_ERROR)
                 {
@@ -270,7 +282,6 @@ void process_response() {
             int client_port = ntohs(data->portOfClient);
             int res = allocate_mem(bytes);
            
-            printf("Sending to %d\n", client_port);
 
             serverAddress.sin_family = AF_INET;								// IPv4 address famly
             serverAddress.sin_addr.s_addr = inet_addr(CLIENT_IP_ADDRESS);	// Set server IP address using string
@@ -282,7 +293,6 @@ void process_response() {
                 if (iResult == SOCKET_ERROR)
                 {
                     fprintf(stderr, "select failed with error: %ld\n", WSAGetLastError());
-                    printf("Waiting for send...\n");
                     continue;
                 }
 
@@ -303,7 +313,6 @@ void process_response() {
                     (SOCKADDR*)&serverAddress,		// Address structure of server (type, IP address and port)
                     sizeof(serverAddress));			// Size of sockadr_in structure
 
-                printf("Send done.\n");
                 
                 if (iResult == SOCKET_ERROR)
                 {
@@ -425,7 +434,6 @@ int main()
 
     while (1)
     {
-        printf("Waiting for message...\n");
         iResult = recvfrom(serverSocket,				// Own socket
             dataBuffer,					// Buffer that will be used for receiving message
             BUFFER_SIZE,					// Maximal size of buffer
@@ -433,7 +441,6 @@ int main()
             (SOCKADDR*)&clientAddress,	// Client information from received message (ip address and port)
             &sockAddrLen);				// Size of sockadd_in structure
 
-        printf("Message received.\n");
         if (iResult == SOCKET_ERROR)
         {
             printf("recvfrom failed with error: %d\n", WSAGetLastError());

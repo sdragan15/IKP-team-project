@@ -156,6 +156,9 @@ void print_search(HashTable* table, int key) {
 }
 
 void print_table(HashTable* table) {
+    if (table->count == 0) {
+        return;
+    }
     printf("\nHash Table\n-------------------\n");
     for (int i = 0; i < table->size; i++) {
         if (table->items[i] != NULL) {

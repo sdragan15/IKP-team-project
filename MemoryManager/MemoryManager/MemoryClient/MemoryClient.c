@@ -23,7 +23,7 @@
 #define BUFFER_SIZE 512						// Size of buffer that will be used for sending and receiving messages to client
 #define SERVER_SLEEP_TIME 50
 
-int counter = 0;
+int counter = 1;
 int usersChoice = -1;
 char* arrayOfMemory[10];
 
@@ -46,6 +46,7 @@ request* userMenu(HashTable* ht) {
         printf("\t\tYour choice is: ");
         gets_s(dataBuffer, BUFFER_SIZE);
         printf("-------------------------------------\n");
+        int res = -2;
 
         command = atoi(dataBuffer); //ako je uspesna konverzija vrati se broj u int, ako nije vrati se 0      
         //reqClient.command = htonl(command);
@@ -56,7 +57,13 @@ request* userMenu(HashTable* ht) {
         }
         else if (command == 2) {
             reqClient->command = htonl(2);
-            reqClient->memoryFree = htonl(print_all_allocated_memory(ht));
+            res = print_all_allocated_memory(ht);
+            if (res != -1) {
+                reqClient->memoryFree = htonl(res);
+            }
+            else {
+                reqClient->memoryFree = -1;
+            }
             //printf("aaaa %d\n", *arrayOfMemory[0]);
             //reqClient->numOfBytes = htonl(4);
 
@@ -86,16 +93,34 @@ int allocate_memory() {
 int print_all_allocated_memory(HashTable* ht) {
     //popunjavamo strukturu koju cemo slati ka redu
     char dataBuffer[BUFFER_SIZE];
+    int res;
     /*for (int i = 0; i < 10; i++) {
         printf("[%d]: %lu\n", i, arrayOfMemory[i]);
     }*/
     print_table(ht);
-    printf("\t\tChoose memory from hash table:");
-    gets_s(dataBuffer, BUFFER_SIZE);
+    if (ht->count == 0) {
+        printf("User does not have allocated memory now!\n");
+        return -1;
+    }
+
+    do {
+        printf("\t\tChoose memory from hash table:");
+        gets_s(dataBuffer, BUFFER_SIZE);
+
+        if (atoi(dataBuffer) == 0){
+            printf("You must input a number in order to realize free memory operation\n");
+        }
+    } while (atoi(dataBuffer) == 0);
 
     //return arrayOfMemory[atoi(dataBuffer)];
     usersChoice = atoi(dataBuffer); //pamti se kljuc memorije koju je klijent trazio da moze da se oslobodi iz tabele
-    return (int)ht_search(ht, atoi(dataBuffer));
+
+    res = (int)ht_search(ht, atoi(dataBuffer)); //pokusace da nadje element sa nepostojecim kljucem i vratice null
+    if (res == NULL) {
+        //element nije nadjen
+        return -1;
+    }
+    return res;
 }
 
 int main()
@@ -170,7 +195,15 @@ int main()
     printf("Client port: %d\n\n", port);
 
     while (1) {
-        request* client = userMenu(ht);
+        request* client;
+        do {
+             client = userMenu(ht);
+             if (client->memoryFree == -1 && client->command == ntohl(2)) {
+                 printf("Operation not completed, empty table or invalid input. Returning to menu...\n");
+             }
+        } while (client->memoryFree == -1 && client->command == ntohl(2)); //necemo da se odradi funkcija ako je izabrano free memory i nije prosledjen adekvatan indeks
+
+       
         if (client->command == -1) {
             printf("User doesn't want more request. Shut down...\n");
             break;

@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include "conio.h"
 #include "Structures.h"
-#include "Queue.c"
+#include "Queue.h"
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")

@@ -1,20 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <Windows.h>
+#include "Queue.h"
 
-HANDLE semaphore;
 
-typedef struct queueElement {
-	void* next;
-	void* value;
-} element;
-
-typedef struct queueHeader {
-	element* front;
-	element* rear;
-} header;
-
-static header* create(HANDLE semaphore) {
+header* create(HANDLE semaphore) {
 	semaphore = CreateSemaphore(0, 1, 1, NULL);
 
 	header* handle = (header*)malloc(sizeof(*handle));
@@ -25,7 +15,7 @@ static header* create(HANDLE semaphore) {
 
 }
 
-static void push(header* h, void* elem, HANDLE semaphore) {
+void push(header* h, void* elem, HANDLE semaphore) {
 	WaitForSingleObject(semaphore, INFINITE);
 	element* el = (element*)malloc(sizeof(*el));
 	el->next = NULL;
@@ -45,7 +35,7 @@ static void push(header* h, void* elem, HANDLE semaphore) {
 
 }
 
-static void* pop(header* h, HANDLE semaphore) {
+void* pop(header* h, HANDLE semaphore) {
 	WaitForSingleObject(semaphore, INFINITE);
 	element* popEl = h->front;
 

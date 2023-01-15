@@ -482,6 +482,7 @@ int main()
 
     WaitForMultipleObjects(2, threads, FALSE, INFINITE);
 
+    CloseHandle(mutex);
     CloseHandle(processThread);
     CloseHandle(sendThread);
 

@@ -271,6 +271,7 @@ int main()
 
     WaitForMultipleObjects(2, threads, FALSE, INFINITE);
 
+    CloseHandle(semaphore);
     CloseHandle(receiveThread);
     CloseHandle(sendThread);
 
